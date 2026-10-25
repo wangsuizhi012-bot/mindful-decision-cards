@@ -17,6 +17,7 @@ import com.mindful.android.helpers.device.DeviceAppsHelper.getDeviceAppInfos
 import com.mindful.android.helpers.device.NewActivitiesLaunchHelper
 import com.mindful.android.helpers.device.NotificationHelper
 import com.mindful.android.helpers.device.PermissionsHelper
+import com.mindful.android.helpers.storage.DecisionCardsRepository
 import com.mindful.android.helpers.storage.SharedPrefsHelper
 import com.mindful.android.helpers.usages.AppsUsageHelper.getAppsUsageForInterval
 import com.mindful.android.models.AppRestriction
@@ -194,6 +195,24 @@ class FgMethodCallHandler(
                     context,
                     call.arguments() ?: ""
                 )
+                result.success(true)
+            }
+
+            "getDecisionCards" -> {
+                result.success(DecisionCardsRepository.getCardsJson(context))
+            }
+
+            "getDecisionCardsEnabled" -> {
+                result.success(DecisionCardsRepository.getEnabled(context))
+            }
+
+            "updateDecisionCards" -> {
+                DecisionCardsRepository.updateCards(context, call.arguments() ?: "")
+                result.success(true)
+            }
+
+            "updateDecisionCardsEnabled" -> {
+                DecisionCardsRepository.setEnabled(context, call.arguments() as? Boolean ?: true)
                 result.success(true)
             }
 

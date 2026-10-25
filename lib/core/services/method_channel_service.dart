@@ -240,6 +240,22 @@ class MethodChannelService {
         jsonEncode(bedtimeSettings),
       );
 
+  /// Fetches the current decision cards raw json array string.
+  Future<String> getDecisionCards() async =>
+      await _methodChannel.invokeMethod<String>('getDecisionCards') ?? '[]';
+
+  /// Fetches the current state of the decision cards feature switch.
+  Future<bool> getDecisionCardsEnabled() async =>
+      await _methodChannel.invokeMethod<bool>('getDecisionCardsEnabled') ?? true;
+
+  /// Replaces all decision cards with the provided raw json array string.
+  Future<void> updateDecisionCards(String jsonCards) async =>
+      _methodChannel.invokeMethod('updateDecisionCards', jsonCards);
+
+  /// Turns the whole decision cards feature on or off.
+  Future<void> updateDecisionCardsEnabled(bool enabled) async =>
+      _methodChannel.invokeMethod('updateDecisionCardsEnabled', enabled);
+
   /// Uses an emergency pass and pause the tracking service.
   ///
   /// This method sends a request to the native side to use an emergency pass.

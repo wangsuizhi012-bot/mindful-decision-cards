@@ -37,6 +37,8 @@ object SharedPrefsHelper {
     private var mListenablePrefs: SharedPreferences? = null
     private const val LISTENABLE_PREFS_BOX = "UniquePrefs"
     const val PREF_KEY_WELLBEING_SETTINGS: String = "wellBeingSettings"
+    const val PREF_KEY_DECISION_CARDS: String = "decisionCards"
+    const val PREF_KEY_DECISION_CARDS_ENABLED: String = "decisionCardsEnabled"
 
     private var mCrashLogPrefs: SharedPreferences? = null
     private const val CRASH_LOG_PREFS_BOX = "CrashLogPrefs"
@@ -110,6 +112,42 @@ object SharedPrefsHelper {
                 .apply()
             return Wellbeing.fromJson(jsonWellBeing)
         }
+    }
+
+
+    /**
+     * Fetches the decision cards json if jsonDecisionCards is null else store it's json.
+     *
+     * @param context         The application context.
+     * @param jsonDecisionCards The JSON string of the decision cards array.
+     * @return The currently stored decision cards json string, NULL if never stored.
+     */
+    fun getSetDecisionCards(
+        context: Context,
+        jsonDecisionCards: String?,
+    ): String? {
+        checkAndInitializeUniquePrefs(context)
+        if (jsonDecisionCards == null) {
+            return mUniquePrefs!!.getString(PREF_KEY_DECISION_CARDS, null)
+        } else {
+            mUniquePrefs!!.edit().putString(PREF_KEY_DECISION_CARDS, jsonDecisionCards).apply()
+            return jsonDecisionCards
+        }
+    }
+
+    /**
+     * Fetches the decision cards feature switch if shouldEnable is null else store the new state.
+     *
+     * @param context      The application context.
+     * @param shouldEnable TRUE to turn the decision cards feature on, FALSE to turn it off.
+     * @return The current state of the feature switch.
+     */
+    fun getSetDecisionCardsEnabled(context: Context, shouldEnable: Boolean?): Boolean {
+        checkAndInitializeUniquePrefs(context)
+        if (shouldEnable != null) {
+            mUniquePrefs!!.edit().putBoolean(PREF_KEY_DECISION_CARDS_ENABLED, shouldEnable).apply()
+        }
+        return mUniquePrefs!!.getBoolean(PREF_KEY_DECISION_CARDS_ENABLED, true)
     }
 
 

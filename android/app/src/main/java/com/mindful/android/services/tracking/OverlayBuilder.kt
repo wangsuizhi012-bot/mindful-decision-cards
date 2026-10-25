@@ -3,7 +3,10 @@ package com.mindful.android.services.tracking
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
@@ -12,8 +15,11 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.annotation.MainThread
+import androidx.core.content.ContextCompat
 import com.mindful.android.R
 import com.mindful.android.enums.RestrictionType
+import com.mindful.android.models.DecisionCard
+import com.mindful.android.models.DecisionRoute
 import com.mindful.android.models.RestrictionState
 import com.mindful.android.utils.AppUtils
 import com.mindful.android.utils.DateTimeUtils
@@ -207,6 +213,169 @@ object OverlayBuilder {
                 dismissOverlay.invoke()
             }
         }
+
+        return sheetView
+    }
+
+
+    /**
+     * Builds the "decision card" overlay: the user picks one of the card's routes
+     * and walks through its steps one by one before continuing into the app.
+     * Nothing is blocked — [dismissOverlay] simply reveals the app underneath.
+     */
+    @MainThread
+    fun buildDecisionCardOverlay(
+        context: Context,
+        packageName: String,
+        card: DecisionCard,
+        dismissOverlay: () -> Unit,
+    ): View {
+        val sheetView = LayoutInflater.from(context).inflate(R.layout.overlay_decision_card_layout, null)
+
+        // Resolve app icon and label
+        val (appName, appIcon) = getAppLabelAndIcon(context, packageName)
+        sheetView.findViewById<ImageView>(R.id.overlay_card_app_icon).setImageDrawable(appIcon)
+        sheetView.findViewById<TextView>(R.id.overlay_card_app_name).text = appName
+        sheetView.findViewById<TextView>(R.id.overlay_card_title).text = card.title
+
+        val questionTxt = sheetView.findViewById<TextView>(R.id.overlay_card_question)
+        questionTxt.text = card.question
+
+        val routesContainer = sheetView.findViewById<LinearLayout>(R.id.overlay_card_routes)
+        val stepsContainer = sheetView.findViewById<LinearLayout>(R.id.overlay_card_steps)
+        val footContainer = sheetView.findViewById<LinearLayout>(R.id.overlay_card_foot)
+        val progressTxt = sheetView.findViewById<TextView>(R.id.overlay_card_progress)
+        val nextBtn = sheetView.findViewById<Button>(R.id.overlay_card_btn_next)
+        val doneContainer = sheetView.findViewById<LinearLayout>(R.id.overlay_card_done)
+
+        val density = sheetView.resources.displayMetrics.density
+        fun dp(value: Int): Int = (value * density).toInt()
+
+        val selectedRoute = intArrayOf(-1)
+        val currentStep = intArrayOf(0)
+
+        fun refreshSteps() {
+            val route = card.routes[selectedRoute[0]]
+            val stepIdx = currentStep[0]
+
+            stepsContainer.removeAllViews()
+            route.steps.forEachIndexed { index, step ->
+                val isCurrent = index == stepIdx
+                val row = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(dp(10), dp(8), dp(10), dp(8))
+                    alpha = if (isCurrent || index < stepIdx) 1f else 0.55f
+                    if (isCurrent) {
+                        background = ContextCompat.getDrawable(context, R.drawable.shape_rounded_md)
+                        backgroundTintList = ColorStateList.valueOf(
+                            ContextCompat.getColor(context, R.color.primaryContainer)
+                        )
+                    }
+
+                    addView(TextView(context).apply {
+                        text = "${index + 1}"
+                        textSize = 13f
+                        setTypeface(typeface, Typeface.BOLD)
+                        setTextColor(
+                            ContextCompat.getColor(
+                                context,
+                                if (isCurrent) R.color.textPrimary else R.color.textSecondary
+                            )
+                        )
+                    })
+
+                    addView(TextView(context).apply {
+                        text = step
+                        textSize = 14f
+                        setTextColor(ContextCompat.getColor(context, R.color.textPrimary))
+                        setPadding(dp(12), 0, 0, 0)
+                    })
+                }
+                stepsContainer.addView(row)
+            }
+
+            progressTxt.text = context.getString(
+                R.string.decision_card_progress,
+                stepIdx + 1,
+                route.steps.size,
+            )
+            val isLast = stepIdx >= route.steps.size - 1
+            nextBtn.text = context.getString(
+                if (isLast) R.string.decision_card_btn_finish else R.string.decision_card_btn_next
+            )
+        }
+
+        fun showDone(route: DecisionRoute) {
+            stepsContainer.visibility = View.GONE
+            footContainer.visibility = View.GONE
+            doneContainer.visibility = View.VISIBLE
+            sheetView.findViewById<TextView>(R.id.overlay_card_done_msg).text = route.doneMsg
+            sheetView.findViewById<TextView>(R.id.overlay_card_done_sub).text = route.doneSub
+        }
+
+        fun selectRoute(index: Int) {
+            selectedRoute[0] = index
+            currentStep[0] = 0
+            questionTxt.visibility = View.GONE
+            routesContainer.visibility = View.GONE
+            stepsContainer.visibility = View.VISIBLE
+            footContainer.visibility = View.VISIBLE
+            refreshSteps()
+        }
+
+        // Route options (dynamically created because cards can have any number of routes)
+        card.routes.forEachIndexed { index, route ->
+            val option = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                background = ContextCompat.getDrawable(context, R.drawable.shape_rounded_md)
+                backgroundTintList = ColorStateList.valueOf(
+                    ContextCompat.getColor(context, R.color.primaryContainer)
+                )
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                isClickable = true
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { setMargins(0, dp(8), 0, 0) }
+
+                addView(TextView(context).apply {
+                    text = route.label
+                    textSize = 15f
+                    setTypeface(typeface, Typeface.BOLD)
+                    setTextColor(ContextCompat.getColor(context, R.color.textPrimary))
+                })
+
+                if (route.sub.isNotEmpty()) {
+                    addView(TextView(context).apply {
+                        text = route.sub
+                        textSize = 12f
+                        setTextColor(ContextCompat.getColor(context, R.color.textSecondary))
+                        setPadding(0, dp(2), 0, 0)
+                    })
+                }
+
+                setOnClickListener { selectRoute(index) }
+            }
+            routesContainer.addView(option)
+        }
+
+        // Next step / finish
+        nextBtn.setOnClickListener {
+            val route = card.routes[selectedRoute[0]]
+            if (currentStep[0] < route.steps.size - 1) {
+                currentStep[0]++
+                refreshSteps()
+            } else {
+                showDone(route)
+            }
+        }
+
+        // Enter app and skip both just reveal the app underneath
+        sheetView.findViewById<Button>(R.id.overlay_card_btn_enter)
+            .setOnClickListener { dismissOverlay.invoke() }
+        sheetView.findViewById<Button>(R.id.overlay_card_btn_skip)
+            .setOnClickListener { dismissOverlay.invoke() }
 
         return sheetView
     }

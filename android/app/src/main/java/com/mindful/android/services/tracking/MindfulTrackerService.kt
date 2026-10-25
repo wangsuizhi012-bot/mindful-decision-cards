@@ -9,6 +9,7 @@ import com.mindful.android.AppConstants
 import com.mindful.android.R
 import com.mindful.android.generics.ServiceBinder
 import com.mindful.android.helpers.device.NotificationHelper
+import com.mindful.android.helpers.storage.DecisionCardsRepository
 import com.mindful.android.helpers.storage.SharedPrefsHelper
 
 class MindfulTrackerService : Service() {
@@ -85,6 +86,25 @@ class MindfulTrackerService : Service() {
             /// check current restrictions
             val currentOrFutureState = restrictionManager.isAppRestricted(packageName)
             Log.d(TAG, "onNewAppLaunch: $packageName's evaluated state => $currentOrFutureState")
+
+            /// Show the decision card for mapped apps unless they are fully restricted,
+            /// in which case the blocking sheet below keeps priority
+            val decisionCard = DecisionCardsRepository.getCardFor(this, packageName)
+            if (decisionCard != null &&
+                (currentOrFutureState == null || currentOrFutureState.timeLeftMillis > 0L)
+            ) {
+                Log.d(TAG, "onNewAppLaunch: showing decision card for $packageName")
+                overlayManager.showDecisionCardOverlay(packageName, decisionCard)
+
+                /// Keep usage reminders alive if the app is also under a restriction
+                currentOrFutureState?.let {
+                    reminderManager.scheduleReminders(
+                        packageName = packageName,
+                        state = it,
+                    )
+                }
+                return
+            }
 
             currentOrFutureState?.let {
                 /// Already restricted

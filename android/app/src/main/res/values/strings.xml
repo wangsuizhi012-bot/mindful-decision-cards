@@ -77,4 +77,16 @@
 
     <string name="notification_schedule_batch_title">Unread notifications</string>
     <string name="notification_schedule_batch_summery" comment="Number of notifications as placeholder" formatted="true">You have %d unread notifications while you were away. They’ll be marked as read after 24 hours.</string>
+
+    <!--  Decision card overlay  -->
+    <string name="decision_card_default_title">Decision card</string>
+    <string name="decision_card_default_question">What do you care about this time?</string>
+    <string name="decision_card_default_progress">Step 1</string>
+    <string name="decision_card_default_done">Card finished</string>
+    <string name="decision_card_default_done_sub">Continue into the app when you are ready.</string>
+    <string name="decision_card_btn_skip">Skip</string>
+    <string name="decision_card_btn_next">Next step</string>
+    <string name="decision_card_btn_finish">Done</string>
+    <string name="decision_card_btn_enter">Enter the app</string>
+    <string name="decision_card_progress" comment="Current step and total steps of the chosen route" formatted="true">Step %1$d of %2$d</string>
 </resources>

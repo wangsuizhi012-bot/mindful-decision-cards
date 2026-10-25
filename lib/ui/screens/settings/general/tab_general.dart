@@ -12,6 +12,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindful/config/app_themes.dart';
+import 'package:mindful/config/navigation/app_routes.dart';
 import 'package:mindful/core/enums/app_theme_mode.dart';
 import 'package:mindful/core/enums/default_home_tab.dart';
 import 'package:mindful/core/enums/item_position.dart';
@@ -224,6 +225,18 @@ class TabGeneral extends ConsumerWidget {
           subtitleText: context.locale.whitelist_app_tile_subtitle,
           trailing: const Icon(FluentIcons.chevron_right_20_regular),
           onPressed: () => _openAutoStartSettings(context),
+        ).sliver,
+
+        /// Decision cards (personal fork)
+        12.vSliverBox,
+        ContentSectionHeader(title: "决策卡").sliver,
+        DefaultListTile(
+          leadingIcon: FluentIcons.lightbulb_filament_20_regular,
+          titleText: "决策卡管理",
+          subtitleText: "查看、导入、编辑打开应用时的引导卡",
+          trailing: const Icon(FluentIcons.chevron_right_20_regular),
+          onPressed: () =>
+              Navigator.of(context).pushNamed(AppRoutes.decisionCardsPath),
         ).sliver,
 
         const SliverTabsBottomPadding(),

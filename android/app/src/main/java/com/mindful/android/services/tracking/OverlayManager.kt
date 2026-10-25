@@ -21,6 +21,7 @@ import com.mindful.android.R
 import com.mindful.android.helpers.device.NotificationHelper
 import com.mindful.android.helpers.device.NotificationHelper.USAGE_REMINDERS_CHANNEL_ID
 import com.mindful.android.helpers.storage.SharedPrefsHelper
+import com.mindful.android.models.DecisionCard
 import com.mindful.android.models.RestrictionState
 import com.mindful.android.services.accessibility.MindfulAccessibilityService
 import com.mindful.android.services.accessibility.MindfulAccessibilityService.Companion.ACTION_PERFORM_HOME_PRESS
@@ -96,34 +97,76 @@ class OverlayManager(
                 }
 
                 Log.d(TAG, "showFullScreenOverlay: Showing full screen overlay for $packageName")
-                sheetOverlay.also {
-                    windowManager.addView(it, sheetLayoutParams)
-                    overlays.push(it)
-                    Utils.vibrateDevice(context, 50L)
-
-                    // Get views
-                    val bg = sheetOverlay.findViewById<View>(R.id.overlay_background)
-                    val quote = sheetOverlay.findViewById<View>(R.id.overlay_sheet_quote_panel)
-                    val sheet = sheetOverlay.findViewById<LinearLayout>(R.id.overlay_sheet)
-
-                    // Set initial
-                    bg.alpha = 0f
-                    quote.alpha = 0f
-                    sheet.translationY = SLIDE_UP_START_Y
-
-                    // Animate
-                    bg.animate().alpha(1f).setDuration(400).start()
-                    quote.animate().alpha(1f).setDuration(400).start()
-                    sheet.animate()
-                        .translationY(0f)
-                        .setInterpolator(OvershootInterpolator(1.5f))
-                        .setDuration(500)
-                        .start()
-                }
+                addOverlayWithEntryAnimation(sheetOverlay)
             }.getOrElse {
                 SharedPrefsHelper.insertCrashLogToPrefs(context, it)
             }
         }
+    }
+
+    /// Shows the "decision card" overlay for a mapped app: pick a route,
+    /// walk through its steps, then continue into the app.
+    fun showDecisionCardOverlay(
+        packageName: String,
+        card: DecisionCard,
+    ) {
+        // Return if overlay is not null
+        if (overlays.isNotEmpty()) return
+
+        ThreadUtils.runOnMainThread {
+            runCatching {
+
+                // Notify, stop and return if don't have overlay permission
+                if (!haveOverlayPermission(context)) {
+                    return@runOnMainThread
+                }
+
+                // Build overlay
+                val cardOverlay = OverlayBuilder.buildDecisionCardOverlay(
+                    context = context,
+                    packageName = packageName,
+                    card = card,
+                    dismissOverlay = ::dismissSheetOverlay,
+                ).apply {
+                    // Full screen edge to edge view
+                    systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                }
+
+                Log.d(TAG, "showDecisionCardOverlay: Showing decision card overlay for $packageName")
+                addOverlayWithEntryAnimation(cardOverlay)
+            }.getOrElse {
+                SharedPrefsHelper.insertCrashLogToPrefs(context, it)
+            }
+        }
+    }
+
+    /// Adds the provided full screen overlay to the window manager and
+    /// plays the shared background fade + sheet slide-up entry animation.
+    private fun addOverlayWithEntryAnimation(overlay: View) {
+        windowManager.addView(overlay, sheetLayoutParams)
+        overlays.push(overlay)
+        Utils.vibrateDevice(context, 50L)
+
+        // Get views
+        val bg = overlay.findViewById<View>(R.id.overlay_background)
+        val quote = overlay.findViewById<View>(R.id.overlay_sheet_quote_panel)
+        val sheet = overlay.findViewById<LinearLayout>(R.id.overlay_sheet)
+
+        // Set initial
+        bg.alpha = 0f
+        quote.alpha = 0f
+        sheet.translationY = SLIDE_UP_START_Y
+
+        // Animate
+        bg.animate().alpha(1f).setDuration(400).start()
+        quote.animate().alpha(1f).setDuration(400).start()
+        sheet.animate()
+            .translationY(0f)
+            .setInterpolator(OvershootInterpolator(1.5f))
+            .setDuration(500)
+            .start()
     }
 
 

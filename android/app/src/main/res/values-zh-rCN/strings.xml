@@ -72,4 +72,16 @@
     <string name="focus_session_giveup_notification_info">您放弃了！别担心，您下次可以做得更好。每一次努力都很重要——只要继续前进</string>
     <string name="notification_schedule_batch_title">未读通知</string>
     <string name="notification_schedule_batch_summery" comment="Number of notifications as placeholder" formatted="true">您离开期间有%d条未读通知。这些通知将在 24 小时后被标记为已读。</string>
+
+    <!--  决策卡浮层  -->
+    <string name="decision_card_default_title">决策卡</string>
+    <string name="decision_card_default_question">这一次，你在意的是什么？</string>
+    <string name="decision_card_default_progress">第 1 步</string>
+    <string name="decision_card_default_done">攻略播完了</string>
+    <string name="decision_card_default_done_sub">准备好了就进入应用。</string>
+    <string name="decision_card_btn_skip">跳过</string>
+    <string name="decision_card_btn_next">下一步</string>
+    <string name="decision_card_btn_finish">完成</string>
+    <string name="decision_card_btn_enter">进入应用</string>
+    <string name="decision_card_progress" comment="当前步数和所选路线总步数" formatted="true">第 %1$d 步，共 %2$d 步</string>
 </resources>
