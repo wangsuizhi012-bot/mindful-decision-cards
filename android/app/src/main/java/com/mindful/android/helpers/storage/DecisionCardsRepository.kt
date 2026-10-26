@@ -31,12 +31,13 @@ object DecisionCardsRepository {
      */
     fun getCardFor(context: Context, packageName: String): DecisionCard? {
         if (!SharedPrefsHelper.getSetDecisionCardsEnabled(context, null)) return null
+        return DecisionCard.parseCardsMap(getCardsJson(context))[packageName]
+    }
 
-        val json = SharedPrefsHelper.getSetDecisionCards(context, null)
-            ?: seedAndGetDefaults(context)
-            ?: return null
-
-        return DecisionCard.parseCardsMap(json)[packageName]
+    /** TRUE when the feature is switched on and at least one enabled card exists. */
+    fun hasActiveCards(context: Context): Boolean {
+        if (!SharedPrefsHelper.getSetDecisionCardsEnabled(context, null)) return false
+        return DecisionCard.parseCardsMap(getCardsJson(context)).isNotEmpty()
     }
 
     /** Returns the stored cards json, seeding the bundled defaults on first use. */

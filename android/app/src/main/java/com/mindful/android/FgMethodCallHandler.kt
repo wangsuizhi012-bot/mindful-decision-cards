@@ -208,11 +208,14 @@ class FgMethodCallHandler(
 
             "updateDecisionCards" -> {
                 DecisionCardsRepository.updateCards(context, call.arguments() ?: "")
+                /// Make sure the tracker service is running so new cards take effect immediately
+                updateTrackerServiceRestrictions(null, null)
                 result.success(true)
             }
 
             "updateDecisionCardsEnabled" -> {
                 DecisionCardsRepository.setEnabled(context, call.arguments() as? Boolean ?: true)
+                updateTrackerServiceRestrictions(null, null)
                 result.success(true)
             }
 
@@ -473,7 +476,9 @@ class FgMethodCallHandler(
                 appRestrictions,
                 restrictionGroups
             )
-        } else if (appRestrictions?.isNotEmpty() == true || restrictionGroups?.isNotEmpty() == true) {
+        } else if (appRestrictions?.isNotEmpty() == true || restrictionGroups?.isNotEmpty() == true
+            || DecisionCardsRepository.hasActiveCards(context)
+        ) {
             trackerServiceConn.setOnConnectedCallback { service ->
                 service.getRestrictionManager.updateRestrictions(
                     appRestrictions,

@@ -5,6 +5,7 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.util.Log
 import com.mindful.android.enums.RestrictionType
+import com.mindful.android.helpers.storage.DecisionCardsRepository
 import com.mindful.android.helpers.usages.ScreenUsageHelper
 import com.mindful.android.models.AppRestriction
 import com.mindful.android.models.RestrictionGroup
@@ -23,6 +24,7 @@ class RestrictionManager(
                 && bedtimeApps.isEmpty()
                 && appsRestrictions.isEmpty()
                 && restrictionGroups.isEmpty()
+                && !DecisionCardsRepository.hasActiveCards(context)
 
     // Restrictions
     private var appsRestrictions = HashMap<String, AppRestriction>()
