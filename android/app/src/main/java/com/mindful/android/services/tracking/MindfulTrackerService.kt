@@ -95,6 +95,7 @@ class MindfulTrackerService : Service() {
             ) {
                 Log.d(TAG, "onNewAppLaunch: showing decision card for $packageName")
                 overlayManager.showDecisionCardOverlay(packageName, decisionCard)
+                overlayManager.showFloatingBubble(packageName, decisionCard)
 
                 /// Keep usage reminders alive if the app is also under a restriction
                 currentOrFutureState?.let {
@@ -105,6 +106,9 @@ class MindfulTrackerService : Service() {
                 }
                 return
             }
+
+            /// Entering an unguarded app: take the bubble away with the card
+            overlayManager.hideFloatingBubble()
 
             currentOrFutureState?.let {
                 /// Already restricted

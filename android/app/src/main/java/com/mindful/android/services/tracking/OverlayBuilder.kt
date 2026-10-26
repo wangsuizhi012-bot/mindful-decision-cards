@@ -4,11 +4,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -378,6 +382,92 @@ object OverlayBuilder {
             .setOnClickListener { dismissOverlay.invoke() }
 
         return sheetView
+    }
+
+
+    /**
+     * Builds the small floating decision ball: shows the guarded app's icon,
+     * can be dragged anywhere, and a tap (without drag) invokes [onTap].
+     * The bubble's window params are attached to the returned view's tag;
+     * add it with `windowManager.addView(view, view.tag as WindowManager.LayoutParams)`.
+     */
+    @MainThread
+    fun buildFloatingBubble(
+        context: Context,
+        packageName: String,
+        onDrag: (View, WindowManager.LayoutParams) -> Unit,
+        onTap: (String) -> Unit,
+    ): View {
+        val bubbleView = LayoutInflater.from(context)
+            .inflate(R.layout.overlay_floating_bubble, null)
+
+        val (appName, appIcon) = getAppLabelAndIcon(context, packageName)
+        bubbleView.findViewById<ImageView>(R.id.overlay_bubble_app_icon)
+            .setImageDrawable(appIcon)
+        bubbleView.contentDescription = appName
+
+        // Window params owned by the bubble itself so dragging can mutate them.
+        // Gravity END: x is the offset from the right edge and grows leftwards.
+        val density = bubbleView.resources.displayMetrics.density
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                WindowManager.LayoutParams.TYPE_PHONE
+            },
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.END
+            x = (12 * density).toInt()
+            y = (600 * density).toInt()
+        }
+        bubbleView.tag = params
+
+        var downRawX = 0f
+        var downRawY = 0f
+        var startX = 0
+        var startY = 0
+        var moved = false
+
+        bubbleView.setOnTouchListener { view, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    downRawX = event.rawX
+                    downRawY = event.rawY
+                    val p = view.tag as WindowManager.LayoutParams
+                    startX = p.x
+                    startY = p.y
+                    moved = false
+                    true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX - downRawX
+                    val dy = event.rawY - downRawY
+                    if (Math.abs(dx) > 12 || Math.abs(dy) > 12) moved = true
+                    if (moved) {
+                        val p = view.tag as WindowManager.LayoutParams
+                        p.x = startX - dx.toInt()
+                        p.y = startY + dy.toInt()
+                        onDrag(view, p)
+                    }
+                    true
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    if (!moved) onTap(packageName)
+                    true
+                }
+
+                else -> false
+            }
+        }
+
+        return bubbleView
     }
 
 

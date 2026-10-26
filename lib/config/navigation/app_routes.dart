@@ -16,6 +16,7 @@ import 'package:mindful/ui/screens/active_session/active_session_screen.dart';
 import 'package:mindful/ui/screens/app_dashboard/app_dashboard_screen.dart';
 import 'package:mindful/ui/screens/change_logs/change_logs_screen.dart';
 import 'package:mindful/ui/screens/decision_cards/decision_cards_screen.dart';
+import 'package:mindful/ui/screens/decision_cards/decision_home_screen.dart';
 import 'package:mindful/ui/screens/focus/focus_screen.dart';
 import 'package:mindful/ui/screens/home/home_screen.dart';
 import 'package:mindful/ui/screens/parental_controls/parental_controls_screen.dart';
@@ -44,6 +45,7 @@ class AppRoutes {
   static const String appDashboardPath = '/appDashboard';
   static const String notificationsPath = '/notifications';
   static const String decisionCardsPath = '/decisionCards';
+  static const String decisionHomePath = '/decisionHome';
 
   static final Map<String, Widget Function(BuildContext)> routes = {
     /// Root
@@ -95,6 +97,9 @@ class AppRoutes {
 
     /// Decision cards screen
     decisionCardsPath: (context) => const DecisionCardsScreen(),
+
+    /// Decision cards landing screen (personal fork default home)
+    decisionHomePath: (context) => const DecisionHomeScreen(),
 
     /// App dashboard screen
     appDashboardPath: (context) => AppDashboardScreen(

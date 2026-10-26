@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/overlay_bubble_root"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <!--  Floating decision ball: shows the guarded app's icon, tap opens its card  -->
+    <ImageView
+        android:id="@+id/overlay_bubble_app_icon"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:alpha="0.92"
+        android:background="@drawable/shape_circle"
+        android:contentDescription="@string/decision_card_default_title"
+        android:elevation="6dp"
+        android:padding="9dp"
+        android:src="@mipmap/ic_launcher"
+        tools:ignore="UnusedAttribute" />
+</FrameLayout>

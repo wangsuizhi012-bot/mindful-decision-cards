@@ -57,7 +57,8 @@ class NavigationService {
     /// Fetch initial deep link
     final initialUri = await _appLinks.getInitialLink();
     if (initialUri == null) {
-      await _goToRoute(AppRoutes.homePath, replaceCurrent: true);
+      // Personal fork: open straight onto the decision cards landing screen
+      await _goToRoute(AppRoutes.decisionHomePath, replaceCurrent: true);
     }
 
     /// Now push the changelog screen if needed

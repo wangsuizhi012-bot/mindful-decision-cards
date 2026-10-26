@@ -40,8 +40,12 @@ class OverlayManager(
     private val windowManager: WindowManager =
         context.getSystemService(WINDOW_SERVICE) as WindowManager
 
+    /// Floating decision bubble for the currently focused guarded app
+    private var bubbleView: View? = null
+    private var bubblePackage: String? = null
 
-    /// Animate out the overlay
+
+    /// Animate out the overlay and bring the floating bubble back
     fun dismissSheetOverlay() {
         overlays.pollFirst()?.let { sheetOverlay ->
             ThreadUtils.runOnMainThread {
@@ -59,10 +63,61 @@ class OverlayManager(
                     .setDuration(500)
                     .withEndAction {
                         windowManager.removeView(sheetOverlay)
+                        if (bubbleView != null) bubbleView?.animate()?.alpha(1f)?.duration = 300
                     }
                     .start()
             }
         }
+    }
+
+    /// Adds the floating decision bubble for [packageName], or updates the
+    /// existing bubble's icon if it already belongs to another app.
+    /// Tapping the bubble shows the app's decision card.
+    fun showFloatingBubble(packageName: String, card: DecisionCard) {
+        ThreadUtils.runOnMainThread {
+            runCatching {
+                if (!haveOverlayPermission(context)) return@runOnMainThread
+
+                // Same app already has a bubble: nothing to do
+                if (bubbleView != null && bubblePackage == packageName) return@runOnMainThread
+
+                removeBubbleInternal()
+
+                bubbleView = OverlayBuilder.buildFloatingBubble(
+                    context = context,
+                    packageName = packageName,
+                    onDrag = { view, params ->
+                        runCatching { windowManager.updateViewLayout(view, params) }
+                    },
+                    onTap = { pkg ->
+                        dismissSheetOverlay()
+                        showDecisionCardOverlay(pkg, card)
+                    },
+                ).also { view ->
+                    windowManager.addView(view, view.tag as WindowManager.LayoutParams)
+                    view.animate().alpha(1f).setDuration(300).start()
+                    Log.d(TAG, "showFloatingBubble: bubble added for $packageName")
+                }
+                bubblePackage = packageName
+            }.getOrElse { e ->
+                Log.e(TAG, "showFloatingBubble: Failed to show bubble", e)
+                SharedPrefsHelper.insertCrashLogToPrefs(context, e)
+            }
+        }
+    }
+
+    /// Removes the floating bubble if present, e.g. when the guarded app
+    /// leaves the foreground.
+    fun hideFloatingBubble() {
+        ThreadUtils.runOnMainThread { removeBubbleInternal() }
+    }
+
+    private fun removeBubbleInternal() {
+        bubbleView?.let { view ->
+            runCatching { windowManager.removeView(view) }
+        }
+        bubbleView = null
+        bubblePackage = null
     }
 
     fun showSheetOverlay(
@@ -135,6 +190,8 @@ class OverlayManager(
                 }
 
                 Log.d(TAG, "showDecisionCardOverlay: Showing decision card overlay for $packageName")
+                // The card covers the whole screen: dim the bubble while it shows
+                bubbleView?.animate()?.alpha(0f)?.setDuration(200)?.start()
                 addOverlayWithEntryAnimation(cardOverlay)
             }.getOrElse {
                 SharedPrefsHelper.insertCrashLogToPrefs(context, it)
